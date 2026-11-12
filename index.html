@@ -286,7 +286,7 @@ details[open] summary::before{content:"▾ "}
 
         <div class="row2">
           <label><span class="lab">Kategorie</span><select id="f_kat"></select></label>
-          <label><span class="lab">Einkauf netto <span class="opt">€, intern</span></span>
+          <label><span class="lab">Einkauf netto <span class="opt">€, intern, freiwillig</span></span>
             <input id="f_ek" class="num" inputmode="decimal" placeholder="4,20"></label>
         </div>
 
@@ -303,9 +303,19 @@ details[open] summary::before{content:"▾ "}
         <div class="row2">
           <label><span class="lab">Gewicht <span class="opt">g, verpackt</span></span>
             <input id="f_g" class="num" inputmode="numeric" placeholder="620"></label>
-          <label><span class="lab">Bestand <span class="opt">Stück</span></span>
+          <label><span class="lab">Bestand <span class="opt">Stück, Pflicht</span></span>
             <input id="f_best" class="num" inputmode="numeric" placeholder="3"></label>
         </div>
+
+        <div class="row2">
+          <label><span class="lab">Zerbrechlich</span>
+            <select id="f_zer"><option value="auto">automatisch</option><option value="ja">ja</option><option value="nein">nein</option></select></label>
+          <label><span class="lab">Strom</span>
+            <select id="f_strom"><option value="keiner">kein Strom</option><option value="kabel">mit Kabel / Netzteil</option><option value="batterie">mit Batterie / Akku</option></select></label>
+        </div>
+        <div class="hint" id="zerHint" style="margin-top:-6px">Automatisch: Vasen, Kerzen &amp; Licht, Lampen und Bilderrahmen gelten als zerbrechlich und gehen nur als versichertes Paket.</div>
+        <label id="batWrap" hidden><span class="lab">Batterien beim Kauf dabei?</span>
+          <select id="f_bat"><option value="nein">nein</option><option value="ja">ja</option></select></label>
 
         <div class="calc">
           <span class="eyebrow">Auswertung</span>
@@ -314,11 +324,11 @@ details[open] summary::before{content:"▾ "}
             <dt>Porto</dt><dd id="c_porto">—</dd>
             <dt>Deckungsbeitrag</dt><dd id="c_db">—</dd>
           </dl>
-          <div class="verdict idle" id="c_verdict"><span class="vi">·</span><span>Preis, Einkauf, Maße und Gewicht eintragen — dann rechnet es hier mit.</span></div>
+          <div class="verdict idle" id="c_verdict"><span class="vi">·</span><span>Preis, Maße und Gewicht eintragen — dann rechnet es hier mit.</span></div>
         </div>
 
         <details>
-          <summary>Weitere Angaben — Material, Saison, Lieferant, Notiz</summary>
+          <summary>Weitere Angaben — Material, Saison, Hersteller, Notiz</summary>
           <div class="grid" style="margin-top:11px">
             <div class="row2">
               <label><span class="lab">Material</span><input id="f_mat" autocomplete="off" placeholder="Keramik"></label>
@@ -328,6 +338,14 @@ details[open] summary::before{content:"▾ "}
               <label><span class="lab">Geschenkset</span>
                 <select id="f_set"><option value="nein">nein</option><option value="ja">ja</option></select></label>
               <label><span class="lab">Lieferant</span><input id="f_lief" autocomplete="off" placeholder="Großhandel"></label>
+            </div>
+            <label><span class="lab">Hersteller <span class="opt">Name wie auf Etikett / Rechnung</span></span>
+              <input id="f_her" autocomplete="off" placeholder="Muster Keramik GmbH"></label>
+            <div class="row2">
+              <label><span class="lab">EAN <span class="opt">Strichcode-Nummer</span></span>
+                <input id="f_ean" class="num" inputmode="numeric" autocomplete="off" placeholder="4012345678901"></label>
+              <label><span class="lab">Warnhinweise <span class="opt">falls auf Packung</span></span>
+                <input id="f_warn" autocomplete="off" placeholder="Nicht für Kinder unter 3 Jahren"></label>
             </div>
             <label><span class="lab">Notiz <span class="opt">nur intern</span></span>
               <textarea id="f_notiz" placeholder="Stichworte für den Beschreibungstext: matte Glasur, passt zu Trockenblumen …"></textarea></label>
@@ -339,12 +357,14 @@ details[open] summary::before{content:"▾ "}
           <div class="assum">
             <span>MwSt</span><span>19 %</span>
             <span>PayPal</span><span>2,99 % + 0,39 €</span>
+            <span>Porto</span><span>Shop-Tarife, Stand 11.11.2026</span>
+            <span>Polster/Karton</span><span>+2 cm je Seite, +150 g</span>
             <span>Verpackung je Sendung</span><span>0,90 €</span>
             <span>Arbeitszeit je Bestellung</span><span>1,50 €</span>
             <span>erwartete Retourenkosten</span><span>0,52 €</span>
             <span>Schwelle „tragfähig“</span><span>3,00 €</span>
           </div>
-          <div class="hint" style="margin-top:8px">Gleiche Werte wie in <span class="mono">02_Kalkulation_Onlineshop.xlsx</span>. Der Kunde zahlt den Versand; Miete, Strom und Shopkosten sind nicht enthalten.</div>
+          <div class="hint" style="margin-top:8px">Gleiche Werte wie in <span class="mono">02_Kalkulation_Onlineshop.xlsx</span>. Der Kunde zahlt den Versand; Miete, Strom und Shopkosten sind nicht enthalten. Ohne Einkaufspreis zeigt die App nur Versandart und Porto. Ein Artikel mit Verlust beim Versand gibt es im Shop nur zur Abholung.</div>
         </details>
       </div>
     </div>
@@ -414,16 +434,21 @@ details[open] summary::before{content:"▾ "}
   var MWST=0.19, PP_SATZ=0.0299, PP_FIX=0.39;
   var VERPACKUNG=0.90, ARBEIT=1.50, RETOURE=0.52, SCHWELLE=3.00;
 
+  // Gleiche Tarife und Zuschläge wie im Shop (src/lib/versand.js, Stand 11.11.2026)
+  var POLSTER_CM=2, FLACH_BIS_CM=3, POLSTER_FLACH_CM=0.5, KARTON_G=150;
   var TARIFE=[
-    {name:"Großbrief",preis:1.80,gMax:500,l:35.3,m:25,k:2},
-    {name:"Warensendung bis 1 kg",preis:2.70,gMax:1000,l:35.3,m:25,k:5},
-    {name:"DHL Kleinpaket",preis:3.29,gMax:1000,l:35.3,m:25,k:8},
-    {name:"DHL Päckchen S",preis:4.19,gMax:2000,l:35,m:25,k:10},
-    {name:"DHL Päckchen M",preis:5.19,gMax:2000,l:60,m:30,k:15},
-    {name:"DHL Paket bis 2 kg",preis:6.19,gMax:2000,l:120,m:60,k:60},
-    {name:"DHL Paket bis 5 kg",preis:7.69,gMax:5000,l:120,m:60,k:60}
+    {name:"Warensendung",preis:2.70,gMax:1000,m:[35.3,25,5],vers:false},
+    {name:"Warensendung bis 2 kg",preis:3.55,gMax:2000,m:[35.3,25,5],vers:false},
+    {name:"DHL Päckchen S",preis:4.19,gMax:2000,m:[35,25,10],vers:false},
+    {name:"DHL Päckchen M",preis:5.19,gMax:2000,m:[60,30,15],vers:false},
+    {name:"DHL Paket bis 2 kg",preis:6.19,gMax:2000,m:[60,30,15],vers:true},
+    {name:"DHL Paket bis 5 kg",preis:7.69,gMax:5000,m:[120,60,60],vers:true},
+    {name:"DHL Paket bis 10 kg",preis:10.49,gMax:10000,m:[120,60,60],vers:true},
+    {name:"DHL Paket bis 20 kg",preis:18.99,gMax:20000,m:[120,60,60],vers:true},
+    {name:"DHL Paket bis 31,5 kg",preis:23.99,gMax:31500,m:[120,60,60],vers:true}
   ];
-  var KATEGORIEN=["Vasen & Gefäße","Kerzen & Licht","Grußkarten","Geschenksets","Saison","Schreibwaren","Wohnaccessoires","Sonstiges"];
+  var KATEGORIEN=["Vasen & Gefäße","Kerzen & Licht","Lampen","Bilderrahmen","Wohnaccessoires","Geschenksets","Saison","Grußkarten","Schreibwaren","Sonstiges"];
+  var ZERBRECHLICH_KAT=["Vasen & Gefäße","Kerzen & Licht","Lampen","Bilderrahmen"];
   var SAISONS=["ganzjährig","Frühling","Ostern","Muttertag","Sommer","Herbst","Advent","Weihnachten"];
   var MAX_BILDER=3, ZIEL_BYTES=170*1024, START_KANTE=1500;
 
@@ -507,14 +532,21 @@ details[open] summary::before{content:"▾ "}
   }
 
   /* ---------- Rechnen ---------- */
+  function zerbrechlich(){
+    var z=$("f_zer").value;
+    return z==="ja" || (z==="auto" && ZERBRECHLICH_KAT.indexOf($("f_kat").value)>=0);
+  }
   function versand(g,h,b,t){
-    if(!isFinite(g)||!isFinite(h)||!isFinite(b)||!isFinite(t)) return null;
+    if(!(g>0)||!(h>0)||!(b>0)||!(t>0)) return null;
     var d=[h,b,t].sort(function(x,y){return y-x;});
+    var p=2*(d[2]<=FLACH_BIS_CM ? POLSTER_FLACH_CM : POLSTER_CM);
+    d=d.map(function(x){return x+p;});
+    var gew=g+KARTON_G, nurVers=zerbrechlich();
     for(var i=0;i<TARIFE.length;i++){
-      var T=TARIFE[i];
-      if(g<=T.gMax && d[0]<=T.l && d[1]<=T.m && d[2]<=T.k) return T;
+      var T=TARIFE[i], m=T.m.slice().sort(function(x,y){return y-x;});
+      if((!nurVers||T.vers) && gew<=T.gMax && d[0]<=m[0] && d[1]<=m[1] && d[2]<=m[2]) return T;
     }
-    return {name:"zu groß — bitte prüfen", preis:10.49};
+    return {name:"zu groß — bitte prüfen", preis:23.99, zuGross:true};
   }
   function rechne(){
     var preis=zahl($("f_preis").value), ek=zahl($("f_ek").value);
@@ -523,10 +555,16 @@ details[open] summary::before{content:"▾ "}
     $("c_vers").textContent  = T ? T.name : "—";
     $("c_porto").textContent = T ? eur(T.preis) : "—";
     var v=$("c_verdict");
-    if(!T || !isFinite(preis) || !isFinite(ek)){
+    if(T && !isFinite(ek)){
       $("c_db").textContent="—";
       v.className="verdict idle";
-      v.innerHTML='<span class="vi">·</span><span>Preis, Einkauf, Maße und Gewicht eintragen — dann rechnet es hier mit.</span>';
+      v.innerHTML='<span class="vi">·</span><span>'+(T.zuGross?'Zu groß für ein Paket — im Shop nur Abholung oder Versand auf Anfrage.':'Versand passt. Für den Deckungsbeitrag den Einkaufspreis eintragen (freiwillig).')+'</span>';
+      return {versandart:T.name, porto:T.preis, deckungsbeitrag:null};
+    }
+    if(!T || !isFinite(preis)){
+      $("c_db").textContent="—";
+      v.className="verdict idle";
+      v.innerHTML='<span class="vi">·</span><span>Preis, Maße und Gewicht eintragen — dann rechnet es hier mit.</span>';
       return null;
     }
     var brutto=preis+T.preis;
@@ -617,7 +655,7 @@ details[open] summary::before{content:"▾ "}
   }
 
   /* ---------- Formular ---------- */
-  var FELDER=["nr","name","kat","preis","ek","mat","h","b","t","g","best","set","sai","lief","notiz"];
+  var FELDER=["nr","name","kat","preis","ek","mat","h","b","t","g","best","zer","strom","bat","set","sai","lief","her","ean","warn","notiz"];
   function lies(){ var o={}; FELDER.forEach(function(k){ o[k]=$("f_"+k).value.trim(); }); return o; }
   function setze(o){ FELDER.forEach(function(k){ $("f_"+k).value=(o&&o[k]!=null)?o[k]:""; }); }
 
@@ -632,6 +670,7 @@ details[open] summary::before{content:"▾ "}
     setze({});
     $("f_nr").value = vonNr ? naechsteNummer(vonNr) : "";
     $("f_kat").value=KATEGORIEN[0]; $("f_sai").value=SAISONS[0]; $("f_set").value="nein";
+    $("f_zer").value="auto"; $("f_strom").value="keiner"; $("f_bat").value="nein"; stromAnzeigen();
     bilder=[]; bearbeitet=null; demo=false;
     $("demoBanner").hidden=true;
     $("formTitle").textContent="Neuer Artikel";
@@ -645,7 +684,9 @@ details[open] summary::before{content:"▾ "}
     var f=lies(), id=schluessel(f.nr);
     if(!id){ $("f_nr").classList.add("err"); $("f_nr").focus(); toast("Artikelnummer fehlt"); return; }
     if(!f.name){ $("f_name").classList.add("err"); $("f_name").focus(); toast("Bezeichnung fehlt"); return; }
-    $("f_nr").classList.remove("err"); $("f_name").classList.remove("err");
+    if(!(zahl(f.best)>=0)){ $("f_best").classList.add("err"); $("f_best").focus(); toast("Bestand fehlt — wie viele Stück sind da?"); return; }
+    if(f.ean && !/^\d{8}(\d{4,6})?$/.test(f.ean.replace(/\s/g,""))){ $("f_ean").classList.add("err"); $("f_ean").focus(); toast("EAN hat 8 oder 13 Ziffern — bitte prüfen"); return; }
+    ["f_nr","f_name","f_best","f_ean"].forEach(function(k){ $(k).classList.remove("err"); });
 
     if(!bearbeitet && artikel.some(function(a){ return a.id===id; })){
       if(!confirm("Artikelnummer "+f.nr+" gibt es schon. Überschreiben?")) return;
@@ -662,7 +703,11 @@ details[open] summary::before{content:"▾ "}
       breite_cm:isFinite(zahl(f.b))?zahl(f.b):null,
       tiefe_cm:isFinite(zahl(f.t))?zahl(f.t):null,
       gewicht_g:isFinite(zahl(f.g))?zahl(f.g):null,
-      bestand:isFinite(zahl(f.best))?zahl(f.best):null,
+      bestand:isFinite(zahl(f.best))?Math.round(zahl(f.best)):null,
+      zerbrechlich:f.zer==="auto"?null:f.zer==="ja",
+      strom:f.strom||"keiner",
+      batterien_enthalten:f.strom==="batterie" && f.bat==="ja",
+      hersteller:f.her, ean:f.ean.replace(/\s/g,""), warnhinweise:f.warn,
       geschenkset:f.set||"nein", saison:f.sai, lieferant:f.lief, notiz:f.notiz,
       status:"Entwurf",
       bilder:bilder.map(function(_,i){ return id+"_"+(i+1)+".jpg"; }),
@@ -697,7 +742,8 @@ details[open] summary::before{content:"▾ "}
     var fotos=0, vers=0;
     artikel.forEach(function(a){
       fotos+=(a.bilder||[]).length;
-      if(typeof a.deckungsbeitrag==="number" && a.deckungsbeitrag>=SCHWELLE) vers++;
+      var dbOk = typeof a.deckungsbeitrag!=="number" || a.deckungsbeitrag>=SCHWELLE;
+      if(typeof a.porto==="number" && String(a.versandart||"").indexOf("zu groß")!==0 && dbOk) vers++;
     });
     $("sBild").textContent=fotos; $("sVers").textContent=vers;
 
@@ -725,7 +771,10 @@ details[open] summary::before{content:"▾ "}
       mt.textContent=teile.join(" · ");
       mid.appendChild(nm); mid.appendChild(mt);
       var p=document.createElement("span"); var d=a.deckungsbeitrag;
-      if(typeof d!=="number"){ p.className="pill warn"; p.textContent="unvollständig"; }
+      var gross=String(a.versandart||"").indexOf("zu groß")===0;
+      if(typeof a.porto!=="number" || typeof a.preis_brutto!=="number"){ p.className="pill warn"; p.textContent="unvollständig"; }
+      else if(gross){ p.className="pill warn"; p.textContent="zu groß"; }
+      else if(typeof d!=="number"){ p.className="pill ok"; p.textContent="Versand ok"; }
       else if(d<0){ p.className="pill bad"; p.textContent="nur Abholung"; }
       else if(d<SCHWELLE){ p.className="pill warn"; p.textContent="dünn"; }
       else { p.className="pill ok"; p.textContent="Versand ok"; }
@@ -743,8 +792,13 @@ details[open] summary::before{content:"▾ "}
       h:a.hoehe_cm!=null?a.hoehe_cm:"", b:a.breite_cm!=null?a.breite_cm:"",
       t:a.tiefe_cm!=null?a.tiefe_cm:"", g:a.gewicht_g!=null?a.gewicht_g:"",
       best:a.bestand!=null?a.bestand:"",
+      zer:a.zerbrechlich===true?"ja":a.zerbrechlich===false?"nein":"auto",
+      strom:a.strom||"keiner", bat:a.batterien_enthalten?"ja":"nein",
+      her:a.hersteller||"", ean:a.ean||"", warn:a.warnhinweise||"",
       set:a.geschenkset||"nein", sai:a.saison||SAISONS[0], lief:a.lieferant, notiz:a.notiz
     });
+    if(KATEGORIEN.indexOf(a.kategorie)<0) $("f_kat").value="Sonstiges";
+    stromAnzeigen();
     bilder=(a.bilddaten||[]).map(function(x){ return {dataUrl:x.data_url, bytes:x.bytes||0}; });
     bearbeitet=a.id; demo=false;
     $("demoBanner").hidden=true;
@@ -758,6 +812,7 @@ details[open] summary::before{content:"▾ "}
   /* ---------- Export ---------- */
   var CSV_KOPF=["artikelnummer","bezeichnung","kategorie","kurzbeschreibung","beschreibung",
     "preis_brutto","ek_netto","material","hoehe_cm","breite_cm","tiefe_cm","gewicht_g","bestand",
+    "zerbrechlich","strom","batterien_enthalten","hersteller","ean","warnhinweise",
     "status","geschenkset","saison","lieferant","bilder","notiz","versandart","porto",
     "deckungsbeitrag","erfasser"];
   function csvFeld(v){
@@ -805,9 +860,11 @@ details[open] summary::before{content:"▾ "}
   function beispiel(){
     setze({nr:"1042", name:"Vase Keramik weiß matt", kat:"Vasen & Gefäße",
       preis:"14,90", ek:"4,20", mat:"Keramik", h:"20", b:"9", t:"9", g:"620", best:"3",
+      zer:"auto", strom:"keiner", bat:"nein", her:"", ean:"", warn:"",
       set:"nein", sai:"ganzjährig", lief:"", notiz:"matte Glasur, passt zu Trockenblumen"});
     rechne();
   }
+  function stromAnzeigen(){ $("batWrap").hidden = $("f_strom").value!=="batterie"; }
   function fragName(vor){
     $("nameModal").hidden=false;
     $("m_name").value=erfasser||"";
@@ -831,6 +888,7 @@ details[open] summary::before{content:"▾ "}
       $("f_"+k).addEventListener("change", rechne);
     });
 
+    $("f_strom").addEventListener("change", stromAnzeigen);
     $("save").onclick=speichern;
     $("clear").onclick=function(){ leeren(demo?"":lies().nr); };
     $("expJson").onclick=function(){
